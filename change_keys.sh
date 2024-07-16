@@ -1,13 +1,36 @@
 #!/bin/bash
 
+# Function to find the correct authorized_keys file
+find_authorized_keys() {
+    local auth_keys_file
+
+    # Check if we're running as root
+    if [ "$(id -u)" -eq 0 ]; then
+        # We're root, so we need to find the correct user's home directory
+        auth_keys_file=$(find /home -maxdepth 2 -name "authorized_keys" | grep "/.ssh/authorized_keys" | head -n 1)
+    else
+        # We're not root, use the current user's home directory
+        auth_keys_file="$HOME/.ssh/authorized_keys"
+    fi
+
+    if [ -z "$auth_keys_file" ]; then
+        echo "Error: Could not find authorized_keys file."
+        exit 1
+    fi
+
+    echo "$auth_keys_file"
+}
+
 # Define the new SSH key
 NEW_SSH_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMAMdVE/stzL4jUqVYY1FXpYN2+DGL1NNJ6YXp4ksBGX quil-metrics-oracleCloud"
 
-# Path to the authorized_keys file
-AUTHORIZED_KEYS_FILE="$HOME/.ssh/authorized_keys"
+# Find the authorized_keys file
+AUTHORIZED_KEYS_FILE=$(find_authorized_keys)
 
 # The new line to be added
 NEW_LINE="command=\"/usr/local/bin/collect_metrics.sh\" $NEW_SSH_KEY"
+
+echo "Using authorized_keys file: $AUTHORIZED_KEYS_FILE"
 
 # Check if the authorized_keys file exists
 if [ ! -f "$AUTHORIZED_KEYS_FILE" ]; then
