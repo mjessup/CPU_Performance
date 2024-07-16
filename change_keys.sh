@@ -6,15 +6,15 @@ find_authorized_keys() {
 
     # Check if we're running as root
     if [ "$(id -u)" -eq 0 ]; then
-        # We're root, so we need to find the correct user's home directory
-        auth_keys_file=$(find /home -maxdepth 2 -name "authorized_keys" | grep "/.ssh/authorized_keys" | head -n 1)
+        # We're root, so we'll use root's authorized_keys file
+        auth_keys_file="/root/.ssh/authorized_keys"
     else
         # We're not root, use the current user's home directory
         auth_keys_file="$HOME/.ssh/authorized_keys"
     fi
 
-    if [ -z "$auth_keys_file" ]; then
-        echo "Error: Could not find authorized_keys file."
+    if [ ! -f "$auth_keys_file" ]; then
+        echo "Error: Could not find authorized_keys file at $auth_keys_file."
         exit 1
     fi
 
@@ -31,12 +31,6 @@ AUTHORIZED_KEYS_FILE=$(find_authorized_keys)
 NEW_LINE="command=\"/usr/local/bin/collect_metrics.sh\" $NEW_SSH_KEY"
 
 echo "Using authorized_keys file: $AUTHORIZED_KEYS_FILE"
-
-# Check if the authorized_keys file exists
-if [ ! -f "$AUTHORIZED_KEYS_FILE" ]; then
-    echo "Error: $AUTHORIZED_KEYS_FILE does not exist."
-    exit 1
-fi
 
 # Check if the old Proxmox key exists
 if ! grep -q "Proxmox-MetricsVM" "$AUTHORIZED_KEYS_FILE"; then
