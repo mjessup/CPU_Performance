@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Function to prompt the user for their SSH key
+prompt_for_ssh_key() {
+    echo "Please paste your SSH key (press Enter when done):"
+    read -r SSH_KEY
+}
+
+# Prompt the user to paste their SSH key
+prompt_for_ssh_key
+
 # Create collect_metrics.sh file and save the contents
 cat << 'EOF' > /usr/local/bin/collect_metrics.sh
 #!/bin/bash
@@ -36,18 +45,23 @@ chmod +x /usr/local/bin/collect_metrics.sh
 # Add alias to .bashrc if it doesn't already exist
 if ! grep -Fxq 'alias metrics="/usr/local/bin/collect_metrics.sh"' ~/.bashrc; then
     echo 'alias metrics="/usr/local/bin/collect_metrics.sh"' >> ~/.bashrc
-    source ~/.bashrc
 fi
+
+# Source .bashrc to apply the alias
+source ~/.bashrc
 
 # Update the authorized_keys file
 AUTHORIZED_KEYS_FILE=~/.ssh/authorized_keys
-SEARCH_STRING="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBbQHJg0TsgnoIu3Gb0Ad6cCTiUXjjNtSMWvq6qIXSV+ Proxmox-MetricsVM"
-REPLACEMENT_STRING='# restrict Proxmox to only metrics\ncommand="/usr/local/bin/collect_metrics.sh" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBbQHJg0TsgnoIu3Gb0Ad6cCTiUXjjNtSMWvq6qIXSV+ Proxmox-MetricsVM'
+REPLACEMENT_STRING="# restrict Proxmox to only metrics\ncommand=\"/usr/local/bin/collect_metrics.sh\" $SSH_KEY"
 
-if grep -Fq "$SEARCH_STRING" "$AUTHORIZED_KEYS_FILE"; then
-    sed -i "/$SEARCH_STRING/c\\$REPLACEMENT_STRING" "$AUTHORIZED_KEYS_FILE"
+# Add or replace the SSH key in the authorized_keys file
+if grep -q 'Proxmox-MetricsVM' "$AUTHORIZED_KEYS_FILE"; then
+    # If the existing entry is found, replace it
+    sed -i "/Proxmox-MetricsVM/c\\$REPLACEMENT_STRING" "$AUTHORIZED_KEYS_FILE"
 else
+    # If no entry is found, append the new entry
     echo -e "$REPLACEMENT_STRING" >> "$AUTHORIZED_KEYS_FILE"
 fi
 
 echo "Setup complete. The collect_metrics.sh script has been created and configured."
+echo "Please open a new terminal session or run 'source ~/.bashrc' to use the 'metrics' alias."
