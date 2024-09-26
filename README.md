@@ -17,7 +17,7 @@ The `set_cpu_performance.sh` script is designed to:
 To set up the script on your server, run the following command:
 
 ```bash
-curl -s https://raw.githubusercontent.com/mjessup/scripts/main/setup.sh | bash
+curl -s https://raw.githubusercontent.com/mjessup/CPU_Performance/main/setup.sh | bash
 ```
 
 This command will:
